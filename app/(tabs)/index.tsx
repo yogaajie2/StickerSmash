@@ -5,10 +5,11 @@ import EmojiPicker from "@/components/EmojiPicker";
 import EmojiSticker from "@/components/EmojiSticker";
 import IconButton from "@/components/IconButton";
 import ImageViewer from "@/components/ImageViewer";
+import domtoimage from "dom-to-image";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { useEffect, useRef, useState } from "react";
-import { ImageSourcePropType, StyleSheet, View } from "react-native";
+import { ImageSourcePropType, Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { captureRef } from "react-native-view-shot";
 const PlaceholderImage = require("@/assets/images/background-image.png");
@@ -50,19 +51,39 @@ export default function Index() {
   }
 
   async function onSaveImageAsync() {
-    try {
-      const localURI = await captureRef(imageRef, {
-        height: 440,
-        quality: 1,
-      });
+    if (Platform.OS !== "web") {
+      try {
+        const localURI = await captureRef(imageRef, {
+          height: 440,
+          quality: 1,
+        });
 
-      await MediaLibrary.saveToLibraryAsync(localURI);
+        await MediaLibrary.saveToLibraryAsync(localURI);
 
-      if (localURI) {
-        alert("Saved!");
+        if (localURI) {
+          alert("Saved!");
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
+    } else {
+      try {
+        if (!imageRef.current) return;
+        const node = imageRef.current as unknown as Node;
+
+        const dataURL = await domtoimage.toJpeg(node, {
+          height: 440,
+          quality: 0.95,
+          width: 320,
+        });
+
+        let link = document.createElement("a");
+        link.download = "sticker-smash.jpeg";
+        link.href = dataURL;
+        link.click();
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
 
